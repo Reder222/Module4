@@ -2,6 +2,7 @@ package com.application.consoleApplication;
 
 
 
+import com.application.dto.UserDTO;
 import com.application.dto.UserDTOUtil;
 import com.application.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input id:");
 
         int id = inputOutputController.readInt();
-        UserDTOUtil.UserDTO handledObject = userService.getByID(id);
+        UserDTO handledObject = userService.getByID(id);
 
         if (handledObject == null) {
             inputOutputController.showError("Entry not found");
