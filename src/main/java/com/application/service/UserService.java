@@ -5,6 +5,7 @@ import com.application.dataClasses.UserData;
 import com.application.dto.UserDTO;
 import com.application.dto.UserDTOUtil;
 import com.application.repositories.UserRepository;
+import com.application.util.ErrorValidationUtil;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,26 +35,24 @@ public class UserService {
     }
 
     @Transactional
-    public String create(String name, String email, int age) {
+    public void create(String name, String email, int age) {
 
         UserData temp = new UserData(name, email, age);
 
-        Set<ConstraintViolation<UserData>> constraintViolations = validator.validate(temp);
-        if (!constraintViolations.isEmpty()) {
+        if (isValid(temp)) {
 
-            StringBuilder errors = new StringBuilder();
-            for (ConstraintViolation<UserData> violation : constraintViolations) {
-                errors.append(violation.getMessage())
-                        .append("\n");
-            }
-            return errors.toString();
+            userRepository.save(temp);
+
+            kafkaTemplate.send("userService", "create", email);
+
         }
 
-        userRepository.save(temp);
 
-        kafkaTemplate.send("userService", "create", email);
+    }
 
-        return "success";
+    @Transactional
+    public void create(UserDTO userDTO) {
+        create(userDTO.getName(), userDTO.getEmail(), userDTO.getAge());
     }
 
     public List<UserDTO> getAll() {
@@ -66,23 +66,14 @@ public class UserService {
     }
 
     @Transactional
-    public String update(UserDTO user) {
+    public void update(UserDTO user) {
         UserData temp = UserDTOUtil.dtoToData(user);
 
-        Set<ConstraintViolation<UserData>> constraintViolations = validator.validate(temp);
-        if (!constraintViolations.isEmpty()) {
-
-            StringBuilder errors = new StringBuilder();
-            for (ConstraintViolation<UserData> violation : constraintViolations) {
-                errors.append(violation.getMessage())
-                        .append("\n");
-            }
-            return errors.toString();
+        if (isValid(temp)) {
+            userRepository.save(temp);
         }
 
 
-        userRepository.save(temp);
-        return "success";
     }
 
     @Transactional
@@ -94,5 +85,15 @@ public class UserService {
 
     }
 
+    private boolean isValid(UserData data) {
+
+        Set<ConstraintViolation<Object>> constraintViolations = validator.validate(data);
+        if (!constraintViolations.isEmpty()) {
+            ErrorValidationUtil.saveError("UserData", constraintViolations);
+            return false;
+        }
+
+        return true;
+    }
 
 }

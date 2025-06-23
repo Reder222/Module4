@@ -1,23 +1,25 @@
 package com.application.consoleApplication;
 
 
-
+import com.application.controllers.UserController;
 import com.application.dto.UserDTO;
 import com.application.dto.UserDTOUtil;
 import com.application.service.UserService;
+import com.application.util.ErrorValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 
-@Controller
+@Component
 public class ConsoleDatabaseApplication {
 
     InputOutputController inputOutputController;
-    UserService userService;
+    UserController userController;
 
     @Autowired
-    public ConsoleDatabaseApplication(InputOutputController inputOutputController, UserService userService) {
+    public ConsoleDatabaseApplication(InputOutputController inputOutputController, UserController userController) {
         this.inputOutputController = inputOutputController;
-        this.userService = userService;
+        this.userController = userController;
     }
 
     private void showInterface() {
@@ -48,7 +50,15 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input Age: ");
         int age = inputOutputController.readInt();
 
-        inputOutputController.showMessage(userService.create(email, name, age));
+        UserDTO dto = new UserDTO(name, email, age);
+
+        userController.create(dto);
+
+        String message = ErrorValidationUtil.getError("UserData");
+
+        if (message != null) {
+            inputOutputController.showError(message);
+        } else inputOutputController.showMessage("Success");
 
     }
 
@@ -56,7 +66,7 @@ public class ConsoleDatabaseApplication {
     private void readEntries() {
         inputOutputController.emptyLine();
         inputOutputController.showMessage("All persistent entries:");
-        userService.getAll().forEach(entry -> inputOutputController.showMessage(entry.toString()));
+        userController.findAll().forEach(entry -> inputOutputController.showMessage(entry.toString()));
     }
 
     private void updateEntry() {
@@ -64,7 +74,7 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input id:");
 
         int id = inputOutputController.readInt();
-        UserDTO handledObject = userService.getByID(id);
+        UserDTO handledObject = userController.findById(id);
 
         if (handledObject == null) {
             inputOutputController.showError("Entry not found");
@@ -106,8 +116,12 @@ public class ConsoleDatabaseApplication {
                 }
                 case 4: {
 
-                    inputOutputController.showMessage(userService.update(handledObject));
+                    userController.update(handledObject.getId(), handledObject);
 
+                    String message = ErrorValidationUtil.getError("UserData");
+                    if (message != null) {
+                        inputOutputController.showError(message);
+                    } else inputOutputController.showMessage("Success");
                     inputOutputController.emptyLine();
                     return;
                 }
@@ -125,7 +139,7 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input id:");
         int id = inputOutputController.readInt();
 
-        userService.delete(id);
+        userController.deleteById(id);
     }
 
     private void changeTable() {

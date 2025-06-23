@@ -22,6 +22,13 @@ public class UserDTO {
         this.created_at = created_at;
     }
 
+    public UserDTO(String name, String email, int age) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
+    }
+
+
     public int getId() {
         return id;
     }
