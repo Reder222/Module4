@@ -6,20 +6,33 @@ import com.application.dto.UserDTO;
 import com.application.dto.UserDTOUtil;
 import com.application.service.UserService;
 import com.application.util.ErrorValidationUtil;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ConsoleDatabaseApplication {
 
     InputOutputController inputOutputController;
-    UserController userController;
+    RestTemplate restTemplate;
 
     @Autowired
-    public ConsoleDatabaseApplication(InputOutputController inputOutputController, UserController userController) {
+    public ConsoleDatabaseApplication(InputOutputController inputOutputController) {
         this.inputOutputController = inputOutputController;
-        this.userController = userController;
+        restTemplate = new RestTemplate();
     }
 
     private void showInterface() {
@@ -52,21 +65,37 @@ public class ConsoleDatabaseApplication {
 
         UserDTO dto = new UserDTO(name, email, age);
 
-        userController.create(dto);
+        restTemplate.put("http://localhost:8080/users/create", dto);
 
-        String message = ErrorValidationUtil.getError("UserData");
-
-        if (message != null) {
-            inputOutputController.showError(message);
-        } else inputOutputController.showMessage("Success");
-
+        /*if (response.getStatusCode() == HttpStatus.CREATED) {
+            inputOutputController.showMessage("Entry created");
+            return;
+        }
+        inputOutputController.showError(response.getBody().toString());
+*/
     }
 
 
     private void readEntries() {
         inputOutputController.emptyLine();
         inputOutputController.showMessage("All persistent entries:");
-        userController.findAll().forEach(entry -> inputOutputController.showMessage(entry.toString()));
+
+        ResponseEntity<List> response = restTemplate.getForEntity("http://localhost:8080/users/", List.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            ObjectMapper mapper = new ObjectMapper();
+            List<UserDTO> users = new ArrayList<>();
+
+            try {
+                users = mapper.readValue(mapper.writeValueAsString(response.getBody()), new TypeReference<>() {
+                });
+
+            } catch (Exception e) {
+                inputOutputController.showError(e.getMessage());
+            }
+            users.forEach(System.out::println);
+            return;
+        }
+        inputOutputController.showError(response.getBody().toString());
     }
 
     private void updateEntry() {
@@ -74,12 +103,14 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input id:");
 
         int id = inputOutputController.readInt();
-        UserDTO handledObject = userController.findById(id);
 
-        if (handledObject == null) {
-            inputOutputController.showError("Entry not found");
-            return;
+        ResponseEntity<UserDTO> entityResponse = restTemplate.getForEntity("http://localhost:8080/users/" + id, UserDTO.class);
+
+        if (entityResponse.getStatusCode() == HttpStatus.NOT_FOUND) {
+            inputOutputController.showError(entityResponse.getBody().toString());
         }
+
+        UserDTO handledObject = entityResponse.getBody();
 
         inputOutputController.showMessage(handledObject.toString());
 
@@ -91,7 +122,9 @@ public class ConsoleDatabaseApplication {
                 4 Update and exit
                 Input a number:""");
 
-        while (true)
+        boolean isEditing = true;
+
+        while (isEditing)
             switch (inputOutputController.readInt()) {
                 case 1: {
                     inputOutputController.emptyLine();
@@ -116,14 +149,18 @@ public class ConsoleDatabaseApplication {
                 }
                 case 4: {
 
-                    userController.update(handledObject.getId(), handledObject);
+                    ResponseEntity<HttpStatus> response = restTemplate.postForEntity("http://localhost:8080/users/" + id + "/edit", handledObject, HttpStatus.class);
 
-                    String message = ErrorValidationUtil.getError("UserData");
-                    if (message != null) {
-                        inputOutputController.showError(message);
-                    } else inputOutputController.showMessage("Success");
-                    inputOutputController.emptyLine();
-                    return;
+                    if (response.getStatusCode() == HttpStatus.OK) {
+                        inputOutputController.showMessage("Entry updated");
+                        isEditing = false;
+                        break;
+                    }
+
+                    inputOutputController.showError(response.getBody().toString());
+                    isEditing = false;
+                    break;
+
                 }
                 default: {
                     inputOutputController.showError("Please enter a valid number");
@@ -139,7 +176,7 @@ public class ConsoleDatabaseApplication {
         inputOutputController.showMessage("Input id:");
         int id = inputOutputController.readInt();
 
-        userController.deleteById(id);
+        restTemplate.delete("http://localhost:8080/users/" + id);
     }
 
     private void changeTable() {

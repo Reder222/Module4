@@ -3,13 +3,18 @@ package com.application.controllers;
 
 import com.application.dto.UserDTO;
 import com.application.service.UserService;
+import com.application.util.ErrorMessageEntity;
+import com.application.util.exceptions.UserNotFoundException;
+import com.application.util.exceptions.UserValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping
+@RequestMapping("/users")
 public class UserController {
 
     private UserService userService;
@@ -19,39 +24,51 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/create")
-    public void create(@RequestBody UserDTO userDTO) {
-
+    @PutMapping("/create")
+    public ResponseEntity<HttpStatus> create(UserDTO userDTO) {
         userService.create(userDTO);
-
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @GetMapping("/")
-    public List<UserDTO> findAll(){
+    public List<UserDTO> findAll() {
 
         return userService.getAll();
 
     }
 
     @GetMapping("/{id}")
-    public UserDTO findById(@PathVariable int id){
+    public UserDTO findById(@PathVariable int id) {
 
         return userService.getByID(id);
 
     }
 
-    @PutMapping("/{id}/edit")
-    public void update(@PathVariable int id, @RequestBody UserDTO userDTO) {
+    @PostMapping("/{id}/edit")
+    public ResponseEntity<HttpStatus> update(@PathVariable int id, UserDTO userDTO) {
 
         userService.update(userDTO);
 
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteById(@PathVariable int id){
+    public ResponseEntity<HttpStatus> deleteById(@PathVariable int id) {
 
         userService.delete(id);
+        return new ResponseEntity<>(HttpStatus.OK);
 
     }
 
+    @ExceptionHandler
+    private ResponseEntity<ErrorMessageEntity> userNotFound(UserNotFoundException e) {
+        ErrorMessageEntity message = new ErrorMessageEntity(e.getMessage());
+        return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler
+    private ResponseEntity<ErrorMessageEntity> userInvalidValidation(UserValidationException e) {
+        ErrorMessageEntity message = new ErrorMessageEntity(e.getMessage());
+        return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+    }
 }

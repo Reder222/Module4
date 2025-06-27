@@ -6,6 +6,8 @@ import com.application.dto.UserDTO;
 import com.application.dto.UserDTOUtil;
 import com.application.repositories.UserRepository;
 import com.application.util.ErrorValidationUtil;
+import com.application.util.exceptions.UserNotFoundException;
+import com.application.util.exceptions.UserValidationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,18 +38,16 @@ public class UserService {
     }
 
     @Transactional
-    public void create(String name, String email, int age) {
+    public void create (String name, String email, int age) throws UserValidationException {
 
         UserData temp = new UserData(name, email, age);
 
         if (isValid(temp)) {
-
             userRepository.save(temp);
-
             kafkaTemplate.send("userService", "create", email);
-
         }
 
+        throw new UserValidationException(ErrorValidationUtil.getError("UserData"));
 
     }
 
@@ -55,24 +56,35 @@ public class UserService {
         create(userDTO.getName(), userDTO.getEmail(), userDTO.getAge());
     }
 
-    public List<UserDTO> getAll() {
-        return userRepository.findAll().stream().map(UserDTOUtil::dataToDTO).collect(Collectors.toList());
+    public List<UserDTO> getAll() throws UserNotFoundException {
+
+        List<UserData> userList = userRepository.findAll();
+
+        if(userList.isEmpty()) {
+            throw new UserNotFoundException("Users not found");
+        }
+
+        return userList.stream().map(UserDTOUtil::dataToDTO).collect(Collectors.toList());
     }
 
-    public UserDTO getByID(int id) {
+    public UserDTO getByID(int id) throws UserNotFoundException {
 
-        UserData temp = userRepository.findById(id).orElse(null);
-        return temp != null ? UserDTOUtil.dataToDTO(temp) : null;
+        Optional<UserData> temp = userRepository.findById(id);
+        if(temp.isPresent()){
+            return UserDTOUtil.dataToDTO(temp.get());
+        }
+        throw new UserNotFoundException("User not found");
     }
 
     @Transactional
-    public void update(UserDTO user) {
+    public void update(UserDTO user) throws UserValidationException{
         UserData temp = UserDTOUtil.dtoToData(user);
 
         if (isValid(temp)) {
             userRepository.save(temp);
         }
 
+        throw new UserValidationException(ErrorValidationUtil.getError("UserData"));
 
     }
 

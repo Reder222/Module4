@@ -12,21 +12,23 @@ public class UserDTO {
     private String name;
     private String email;
     private int age;
-    private LocalDate created_at;
 
-    public UserDTO(int id, String name, String email, int age, LocalDate created_at){
+
+    public UserDTO(int id, String name, String email, int age) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.age = age;
-        this.created_at = created_at;
+
     }
 
     public UserDTO(String name, String email, int age) {
+        id =0;
         this.name = name;
         this.email = email;
         this.age = age;
     }
+    public UserDTO() {}
 
 
     public int getId() {
@@ -61,13 +63,6 @@ public class UserDTO {
         this.age = age;
     }
 
-    public LocalDate getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(LocalDate created_at) {
-        this.created_at = created_at;
-    }
 
     @Override
     public String toString() {
