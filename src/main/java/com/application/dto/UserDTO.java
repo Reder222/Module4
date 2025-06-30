@@ -23,7 +23,7 @@ public class UserDTO {
     }
 
     public UserDTO(String name, String email, int age) {
-        id =0;
+        id = -1;
         this.name = name;
         this.email = email;
         this.age = age;

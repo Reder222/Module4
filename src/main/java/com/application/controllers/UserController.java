@@ -24,10 +24,12 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PutMapping("/create")
-    public ResponseEntity<HttpStatus> create(UserDTO userDTO) {
+    @PostMapping("/create")
+    public ResponseEntity<HttpStatus> create(@RequestBody UserDTO userDTO) {
+
         userService.create(userDTO);
         return new ResponseEntity<>(HttpStatus.CREATED);
+
     }
 
     @GetMapping("/")
@@ -45,7 +47,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/edit")
-    public ResponseEntity<HttpStatus> update(@PathVariable int id, UserDTO userDTO) {
+    public ResponseEntity<HttpStatus> update(@PathVariable int id,@RequestBody UserDTO userDTO) {
 
         userService.update(userDTO);
 
@@ -70,5 +72,11 @@ public class UserController {
     private ResponseEntity<ErrorMessageEntity> userInvalidValidation(UserValidationException e) {
         ErrorMessageEntity message = new ErrorMessageEntity(e.getMessage());
         return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    private ResponseEntity<ErrorMessageEntity> unknownException(Exception e) {
+        ErrorMessageEntity message = new ErrorMessageEntity(e.getMessage());
+        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

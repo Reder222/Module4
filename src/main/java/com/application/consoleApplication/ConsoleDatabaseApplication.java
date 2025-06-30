@@ -1,22 +1,13 @@
 package com.application.consoleApplication;
 
 
-import com.application.controllers.UserController;
 import com.application.dto.UserDTO;
-import com.application.dto.UserDTOUtil;
-import com.application.service.UserService;
-import com.application.util.ErrorValidationUtil;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -65,16 +56,20 @@ public class ConsoleDatabaseApplication {
 
         UserDTO dto = new UserDTO(name, email, age);
 
-        restTemplate.put("http://localhost:8080/users/create", dto);
-
-        /*if (response.getStatusCode() == HttpStatus.CREATED) {
-            inputOutputController.showMessage("Entry created");
-            return;
+        try {
+            ResponseEntity response = restTemplate.postForEntity("http://localhost:8080/users/create", dto, ResponseEntity.class);
+            if (response.getStatusCode() == HttpStatus.CREATED) {
+                inputOutputController.showMessage("Successfully created entry");
+            } else {
+                inputOutputController.showError("Failed to create entry");
+                inputOutputController.showError(response.getBody().toString());
+            }
+        } catch (Exception e) {
+            inputOutputController.showError("Failed to create entry");
         }
-        inputOutputController.showError(response.getBody().toString());
-*/
-    }
 
+
+    }
 
     private void readEntries() {
         inputOutputController.emptyLine();
@@ -149,16 +144,20 @@ public class ConsoleDatabaseApplication {
                 }
                 case 4: {
 
-                    ResponseEntity<HttpStatus> response = restTemplate.postForEntity("http://localhost:8080/users/" + id + "/edit", handledObject, HttpStatus.class);
+                    try {
+                        ResponseEntity<HttpStatus> response = restTemplate.postForEntity("http://localhost:8080/users/" + id + "/edit", handledObject, HttpStatus.class);
 
-                    if (response.getStatusCode() == HttpStatus.OK) {
-                        inputOutputController.showMessage("Entry updated");
-                        isEditing = false;
-                        break;
+                        if (response.getStatusCode() == HttpStatus.OK) {
+                            inputOutputController.showMessage("Entry updated");
+                        } else inputOutputController.showError(response.getBody().toString());
+
+
+                    } catch (Exception e) {
+                        inputOutputController.showError("Failed to create entry");
                     }
-
-                    inputOutputController.showError(response.getBody().toString());
-                    isEditing = false;
+                    finally {
+                        isEditing = false;
+                    }
                     break;
 
                 }

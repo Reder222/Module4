@@ -17,7 +17,9 @@ public class UserDTOUtil {
 
     public static UserData dtoToData(UserDTO userDTO) {
         UserData temp = new UserData(userDTO.getName(), userDTO.getEmail(), userDTO.getAge());
-        temp.setId(userDTO.getId());
+        if (userDTO.getId() != -1) {
+            temp.setId(userDTO.getId());
+        }
         return temp;
     }
 

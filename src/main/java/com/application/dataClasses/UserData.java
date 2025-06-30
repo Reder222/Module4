@@ -1,11 +1,7 @@
 package com.application.dataClasses;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-
+import jakarta.validation.constraints.*;
 
 
 import java.time.LocalDate;
@@ -28,6 +24,7 @@ public class UserData {
 
     @Column(name = "email", nullable = false, unique = true)
     @NotNull(message = "Email cant be null")
+    @Email(message = "Email should have email type")
     private String email;
 
 
@@ -41,6 +38,7 @@ public class UserData {
     private LocalDate created_at;
 
     public UserData() {
+        created_at = LocalDate.now();
     }
 
     public UserData(String name, String email, int age) {

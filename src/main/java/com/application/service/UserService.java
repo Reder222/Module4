@@ -44,10 +44,9 @@ public class UserService {
 
         if (isValid(temp)) {
             userRepository.save(temp);
-            kafkaTemplate.send("userService", "create", email);
+            if (kafkaTemplate.inTransaction())kafkaTemplate.send("userService", "create", email);
         }
-
-        throw new UserValidationException(ErrorValidationUtil.getError("UserData"));
+        else throw new UserValidationException(ErrorValidationUtil.getError("UserData"));
 
     }
 
@@ -92,7 +91,7 @@ public class UserService {
     public void delete(int id) {
         userRepository.findById(id).ifPresent(temp -> {
             userRepository.deleteById(id);
-            kafkaTemplate.send("userService", "delete", temp.getEmail());
+            if (kafkaTemplate.inTransaction()) kafkaTemplate.send("userService", "delete", temp.getEmail());
         });
 
     }
